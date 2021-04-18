@@ -1,23 +1,31 @@
 mod syscall_table;
 
-use nix::sys::ptrace as ptrace;
-use std::env;
-use nix::unistd::Pid;
-use nix::sys::wait::waitpid;
+use tokio::runtime;
+use tokio::signal::ctrl_c;
+use redbpf::Module;
+use std::error::Error;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        std::process::exit(1);
-    }
-    let pid = Pid::from_raw((&args[1]).parse::<i32>().unwrap());
-    ptrace::attach(pid).unwrap();
-    waitpid(pid, None).unwrap();
-    loop {
-        ptrace::syscall(pid, None).unwrap();
-        waitpid(pid, None).unwrap();
-        let regs = ptrace::getregs(pid).unwrap();
-        println!("Syscall: {:?}", syscall_table::lookup(regs.orig_rax));
-    }
-    //ptrace::detach(pid, None).unwrap();
+fn main() -> Result<(), Box<dyn Error>> {
+    let rt = runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    rt.block_on(async {
+
+        let prog = include_bytes!("../target/bpf/programs/open/open.elf");
+        let mut module = Module::parse(prog).expect("error parsing BPF code");
+
+        for program in module.programs.iter_mut() {
+            println!("Loading program: {}", program.name());
+            program.load(module.version, module.license.clone()).unwrap();
+        }
+
+        for program in module.kprobes_mut() {
+            println!("Attaching Kprobe: {}", program.name());
+            program.attach_kprobe(&program.name(), 0).unwrap();
+        }
+
+        let _ = ctrl_c().await;
+        Ok(())
+    })
 }
