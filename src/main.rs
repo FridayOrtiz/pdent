@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
     rt.block_on(async {
 
-        let prog = include_bytes!("../target/bpf/programs/open/open.elf");
+        let prog = include_bytes!("../target/bpf/programs/syscall/syscall.elf");
         let mut module = Module::parse(prog).expect("error parsing BPF code");
 
         for program in module.programs.iter_mut() {
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         for program in module.kprobes_mut() {
-            println!("Attaching Kprobe: {}", program.name());
+            println!("Attaching kprobe: {}", program.name());
             program.attach_kprobe(&program.name(), 0).unwrap();
         }
 

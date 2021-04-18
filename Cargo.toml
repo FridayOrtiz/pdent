@@ -17,6 +17,6 @@ default = []
 probes = ["redbpf-macros", "redbpf-probes"]
 
 [[bin]]
-name = "open"
-path = "src/kprobe/open.rs"
+name = "syscall"
+path = "src/kprobe/syscall.rs"
 required-features = ["probes"]

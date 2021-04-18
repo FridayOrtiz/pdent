@@ -2,11 +2,11 @@
 description = "Build kprobe program"
 install_crate_args = ["cargo-bpf", "--git", "https://github.com/foniod/redbpf.git"]
 command = "cargo"
-args = ["bpf", "build", "open"]
+args = ["bpf", "build", "syscall"]
 
 [tasks.bpf]
 command = "llvm-strip-10"
-args = ["-R", ".text", "target/bpf/programs/open/open.elf"]
+args = ["-R", ".text", "target/bpf/programs/syscall/syscall.elf"]
 dependencies = ["build_kprobe"]
 
 [tasks.release]
